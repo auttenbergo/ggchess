@@ -115,7 +115,7 @@ public class Board {
             board[to.getX()][to.getY()] = target;
             board[from.getX()][from.getY()] = null;
             player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
-
+            return;
         }
 
         if (board[to.getX()][to.getY()] != null) {
