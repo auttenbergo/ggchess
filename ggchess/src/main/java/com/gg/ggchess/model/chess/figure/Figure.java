@@ -2,10 +2,12 @@ package com.gg.ggchess.model.chess.figure;
 
 
 import com.gg.ggchess.model.chess.Board;
+import com.gg.ggchess.model.chess.FigureMove;
 import com.gg.ggchess.model.chess.Player;
 import com.gg.ggchess.model.chess.Position;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class Figure {
     public static final String PAWN = "P";
@@ -32,11 +34,15 @@ public abstract class Figure {
     }
 
     public boolean canMove(Board board, Position from, Position to) {
-        Set<Position> possibleMoves = possibleMoves(board, from);
-        return possibleMoves.contains(to);
+        Set<FigureMove> possibleMoves = possibleMoves(board, from);
+        return possibleMoves.stream()
+                .map(FigureMove::getTo)
+                .collect(Collectors.toSet())
+                .contains(to);
     }
 
-    public abstract Set<Position> possibleMoves(Board board, Position from);
+    public abstract Set<FigureMove> possibleMoves(Board board, Position from);
 
+    public abstract Set<FigureMove> attackMoves(Board board, Position from);
 }
 

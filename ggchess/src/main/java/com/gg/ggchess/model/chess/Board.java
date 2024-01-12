@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Board {
     public static final int SIZE = 8;
@@ -99,14 +100,22 @@ public class Board {
             throw new ChessException("Figure at position " + from + " is not yours");
         }
 
-        // Check if current King is targeted and other Piece wants to move
-        King king = getCurrentKing();
-        if (target != king && isCurrentKingTargeted()) {
-            throw new ChessException("King is targeted");
-        }
-
         if (!target.canMove(this, from, to)) {
             throw new ChessException("Figure at position " + from + " can't move to " + to);
+        }
+
+        // Check if current King is targeted and other Piece wants to move
+        // If piece moves to kill the enemy, check if King is still targeted
+        King king = getCurrentKing();
+        if (target != king && isCurrentKingTargeted()) {
+            if (isCurrentKingTargetedAfterMove(from, to)) {
+                throw new ChessException("King is targeted");
+            }
+
+            board[to.getX()][to.getY()] = target;
+            board[from.getX()][from.getY()] = null;
+            player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+
         }
 
         if (board[to.getX()][to.getY()] != null) {
@@ -140,14 +149,18 @@ public class Board {
         return null;
     }
 
-    public Set<Position> getAllPlayerMoves(Player player) {
-        Set<Position> allPositions = new HashSet<>();
+    public Set<FigureMove> getAllPlayerAttackMoves(Player player) {
+        Set<FigureMove> allPositions = new HashSet<>();
         for (int i = 0; i < SIZE; i++) {
             for (int j = 0; j < SIZE; j++) {
-                if (board[i][j].getPlayer() != player)
+                if (board[i][j] == null || board[i][j].getPlayer() != player)
                     continue;
                 Figure figure = getFigure(i, j);
-                allPositions.addAll(figure.possibleMoves(this, new Position(i, j)));
+
+                Position position = new Position(i, j);
+
+                allPositions.addAll(figure.attackMoves(this, position));
+
             }
         }
         return allPositions;
@@ -157,8 +170,34 @@ public class Board {
         King king = getCurrentKing();
         Position kingPosition = getKingPosition(king);
 
-        Set<Position> allEnemyMoves = getAllPlayerMoves(player.getEnemy());
-        return allEnemyMoves.contains(kingPosition);
+        Set<FigureMove> allEnemyMoves = getAllPlayerAttackMoves(player.getEnemy());
+        return allEnemyMoves.stream()
+                .map(FigureMove::getTo)
+                .collect(Collectors.toSet())
+                .contains(kingPosition);
+    }
+
+    private boolean isCurrentKingTargetedAfterMove(Position from, Position to) {
+        Figure previousFrom = getFigure(from);
+        Figure previousTo = getFigure(to);
+
+        try {
+            board[from.getX()][from.getY()] = null;
+            board[to.getX()][to.getY()] = previousFrom;
+
+
+            King king = getCurrentKing();
+            Position kingPosition = getKingPosition(king);
+
+            Set<FigureMove> allEnemyMoves = getAllPlayerAttackMoves(player.getEnemy());
+            return allEnemyMoves.stream()
+                    .map(FigureMove::getTo)
+                    .collect(Collectors.toSet())
+                    .contains(kingPosition);
+        } finally {
+            board[from.getX()][from.getY()] = previousFrom;
+            board[to.getX()][to.getY()] = previousTo;
+        }
     }
 
     private King getCurrentKing() {

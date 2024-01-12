@@ -2,11 +2,13 @@ package com.gg.ggchess.model.chess.figure;
 
 
 import com.gg.ggchess.model.chess.Board;
+import com.gg.ggchess.model.chess.FigureMove;
 import com.gg.ggchess.model.chess.Player;
 import com.gg.ggchess.model.chess.Position;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class King extends Figure {
     public King(Player player) {
@@ -15,7 +17,7 @@ public class King extends Figure {
 
     // TODO: Add castling
     @Override
-    public Set<Position> possibleMoves(Board board, Position from) {
+    public Set<FigureMove> possibleMoves(Board board, Position from) {
         if (!board.hasFigure(from)) {
             throw new IllegalArgumentException("No figure at position " + from);
         }
@@ -23,7 +25,9 @@ public class King extends Figure {
             throw new IllegalArgumentException("Figure at position " + from + " is not yours");
         }
 
-        Set<Position> allEnemyMoves = board.getAllPlayerMoves(getPlayer().getEnemy());
+        Set<Position> allEnemyMoves = board.getAllPlayerAttackMoves(getPlayer().getEnemy()).stream()
+                .map(FigureMove::getTo)
+                .collect(Collectors.toSet());
 
         Set<Position> positions = new LinkedHashSet<>();
 
@@ -52,6 +56,36 @@ public class King extends Figure {
             }
         }
 
-        return positions;
+        return positions.stream()
+                .map(pos -> new FigureMove(from, pos, this))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<FigureMove> attackMoves(Board board, Position from) {
+        if (!board.hasFigure(from)) {
+            throw new IllegalArgumentException("No figure at position " + from);
+        }
+        if (board.getFigure(from).getPlayer() != getPlayer()) {
+            throw new IllegalArgumentException("Figure at position " + from + " is not yours");
+        }
+
+        Set<Position> positions = new LinkedHashSet<>();
+
+        for (int i = from.getX() - 1; i <= from.getX() + 1; i++) {
+            for (int j = from.getY() - 1; j <= from.getY() + 1; j++) {
+                if (i == from.getX() && j == from.getY()) {
+                    continue;
+                }
+                if (i < 0 || i >= Board.SIZE || j < 0 || j >= Board.SIZE) {
+                    continue;
+                }
+
+                positions.add(new Position(i, j));
+            }
+        }
+        return positions.stream()
+                .map(pos -> new FigureMove(from, pos, this))
+                .collect(Collectors.toSet());
     }
 }
