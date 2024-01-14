@@ -2,13 +2,7 @@ package com.gg.ggchess.model.chess;
 
 
 import com.gg.ggchess.exception.ChessException;
-import com.gg.ggchess.model.chess.figure.Bishop;
-import com.gg.ggchess.model.chess.figure.Figure;
-import com.gg.ggchess.model.chess.figure.King;
-import com.gg.ggchess.model.chess.figure.Knight;
-import com.gg.ggchess.model.chess.figure.Pawn;
-import com.gg.ggchess.model.chess.figure.Queen;
-import com.gg.ggchess.model.chess.figure.Rook;
+import com.gg.ggchess.model.chess.figure.*;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -116,6 +110,11 @@ public class Board {
             board[from.getX()][from.getY()] = null;
             player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
             return;
+        }
+
+        // Check if after the move King is targeted
+        if (isCurrentKingTargetedAfterMove(from, to)) {
+            throw new ChessException("King will be targeted after the move");
         }
 
         if (board[to.getX()][to.getY()] != null) {
