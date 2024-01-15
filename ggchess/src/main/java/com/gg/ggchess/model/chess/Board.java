@@ -2,11 +2,18 @@ package com.gg.ggchess.model.chess;
 
 
 import com.gg.ggchess.exception.ChessException;
-import com.gg.ggchess.model.chess.figure.*;
+import com.gg.ggchess.model.chess.figure.Bishop;
+import com.gg.ggchess.model.chess.figure.Figure;
+import com.gg.ggchess.model.chess.figure.King;
+import com.gg.ggchess.model.chess.figure.Knight;
+import com.gg.ggchess.model.chess.figure.Pawn;
+import com.gg.ggchess.model.chess.figure.Queen;
+import com.gg.ggchess.model.chess.figure.Rook;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,7 +24,24 @@ public class Board {
     private King whiteKing;
     private King blackKing;
 
+    public void initializeCustom(Map<String, String> boardMap) throws ChessException {
+        board = new Figure[SIZE][SIZE];
+        for (Map.Entry<String, String> entry : boardMap.entrySet()) {
+            String position = entry.getKey();
+            String figure = entry.getValue();
+
+            int x = SIZE - (position.charAt(1) - '0');
+            int y = position.charAt(0) - 'a';
+
+            Player player = Character.toLowerCase(figure.charAt(0)) == 'w' ? Player.WHITE : Player.BLACK;
+            Character figureC = Character.toUpperCase(figure.charAt(1));
+            board[x][y] = Figure.parseFigure(figureC, player);
+        }
+        player = Player.WHITE;
+    }
+
     public Map<String, String> initialize() {
+        board = new Figure[SIZE][SIZE];
         initializeBlacks();
         initializeWhites();
         player = Player.WHITE;
@@ -77,15 +101,15 @@ public class Board {
         return board[x][y] != null;
     }
 
-    public void moveFigure(String from, String to) throws ChessException {
+    public void moveFigure(String from, String to, Map<String, String> additionalProperties) throws ChessException {
         Position fromPosition = new Position(from);
         Position toPosition = new Position(to);
-        moveFigure(fromPosition, toPosition);
+        moveFigure(fromPosition, toPosition, additionalProperties);
     }
 
-    // TODO: King -> Add that must move if targeted by enemy (if no moves, game over)
+    // TODO: King -> Shamati
 
-    public void moveFigure(Position from, Position to) throws ChessException {
+    public void moveFigure(Position from, Position to, Map<String, String> additionalProperties) throws ChessException {
         Figure target = getFigure(from);
         if (target == null) {
             throw new ChessException("No figure at position " + from);
@@ -130,11 +154,45 @@ public class Board {
             }
         }
 
-        // TODO: Add promotion (when pawn goes to the end)
+        if (target instanceof Pawn && (to.getX() == 0 || to.getX() == SIZE - 1)) {
+            if (additionalProperties == null || !additionalProperties.containsKey("promoteTo")) {
+                throw new ChessException("Promotion must be passed for pawn at position " + from);
+            }
+            Character promoteTo = Objects.requireNonNull(additionalProperties.get("promoteTo")).charAt(0);
+            Figure promotedFigure = Figure.parseFigure(promoteTo, player);
+
+            if (!Figure.isValidPromotionFigure(promotedFigure)) {
+                throw new ChessException("Invalid promotion figure: " + promoteTo);
+            }
+
+            board[to.getX()][to.getY()] = promotedFigure;
+            board[from.getX()][from.getY()] = null;
+            player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+            return;
+        }
 
         board[to.getX()][to.getY()] = target;
         board[from.getX()][from.getY()] = null;
         player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+    }
+
+    public boolean canPromote(String from, String to, Map<String, String> stringStringMap) {
+        Position fromPosition = new Position(from);
+        Position toPosition = new Position(to);
+
+        Figure target = getFigure(fromPosition);
+        if (target == null) {
+            return false;
+        }
+        if (!(target instanceof Pawn)) {
+            return false;
+        }
+
+        Pawn pawn = (Pawn) target;
+        if (pawn.getPlayer() != player) {
+            return false;
+        }
+        return toPosition.getX() == 0 || toPosition.getX() == SIZE - 1;
     }
 
     private Position getKingPosition(Figure figure) {
@@ -217,5 +275,4 @@ public class Board {
         }
         return boardMap;
     }
-
 }

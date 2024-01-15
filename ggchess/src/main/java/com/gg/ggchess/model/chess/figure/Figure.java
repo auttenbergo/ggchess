@@ -1,6 +1,7 @@
 package com.gg.ggchess.model.chess.figure;
 
 
+import com.gg.ggchess.exception.ChessException;
 import com.gg.ggchess.model.chess.Board;
 import com.gg.ggchess.model.chess.FigureMove;
 import com.gg.ggchess.model.chess.Player;
@@ -39,6 +40,25 @@ public abstract class Figure {
                 .map(FigureMove::getTo)
                 .collect(Collectors.toSet())
                 .contains(to);
+    }
+
+    public static boolean isValidPromotionFigure(Figure figure) {
+        return switch (figure.getName().charAt(1)) {
+            case 'Q', 'R', 'B', 'N' -> true;
+            default -> false;
+        };
+    }
+
+    public static Figure parseFigure(Character figure, Player player) throws ChessException {
+        return switch (figure) {
+            case 'P' -> new Pawn(player);
+            case 'R' -> new Rook(player);
+            case 'N' -> new Knight(player);
+            case 'B' -> new Bishop(player);
+            case 'Q' -> new Queen(player);
+            case 'K' -> new King(player);
+            default -> throw new ChessException("Unknown figure: " + figure);
+        };
     }
 
     public abstract Set<FigureMove> possibleMoves(Board board, Position from);

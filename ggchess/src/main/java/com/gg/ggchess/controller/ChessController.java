@@ -22,14 +22,20 @@ public class ChessController {
 
     @PostMapping("/initialize")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String, String> initialize() {
-        return chessService.initialize();
+    public Map<String, String> initialize(@Valid @RequestBody(required = false) Map<String, String> boardMap) {
+        return chessService.initialize(boardMap);
     }
 
     @PostMapping("/move")
     @ResponseStatus(HttpStatus.OK)
-    public Map<String,String> move(@Valid @RequestBody MoveRequest request){
+    public Map<String, String> move(@Valid @RequestBody MoveRequest request) {
         return chessService.move(request);
+    }
+
+    @PostMapping("/can-promote")
+    @ResponseStatus(HttpStatus.OK)
+    public boolean canPromote(@Valid @RequestBody MoveRequest request) {
+        return chessService.canPromote(request);
     }
 
 }
