@@ -25,6 +25,9 @@ public class Board {
     private King blackKing;
 
     public void initializeCustom(Map<String, String> boardMap) throws ChessException {
+        if (!boardMap.containsValue("wK") || !boardMap.containsValue("bK"))
+            throw new ChessException("Board must contain white and black king");
+
         board = new Figure[SIZE][SIZE];
         for (Map.Entry<String, String> entry : boardMap.entrySet()) {
             String position = entry.getKey();
@@ -35,7 +38,18 @@ public class Board {
 
             Player player = Character.toLowerCase(figure.charAt(0)) == 'w' ? Player.WHITE : Player.BLACK;
             Character figureC = Character.toUpperCase(figure.charAt(1));
-            board[x][y] = Figure.parseFigure(figureC, player);
+
+            Figure figureParsed = Figure.parseFigure(figureC, player);
+
+            if (figureParsed instanceof King) {
+                if (player == Player.WHITE) {
+                    whiteKing = (King) figureParsed;
+                } else {
+                    blackKing = (King) figureParsed;
+                }
+            }
+
+            board[x][y] = figureParsed;
         }
         player = Player.WHITE;
     }
@@ -107,8 +121,6 @@ public class Board {
         moveFigure(fromPosition, toPosition, additionalProperties);
     }
 
-    // TODO: King -> Shamati
-
     public void moveFigure(Position from, Position to, Map<String, String> additionalProperties) throws ChessException {
         Figure target = getFigure(from);
         if (target == null) {
@@ -118,6 +130,15 @@ public class Board {
             throw new ChessException("Figure at position " + from + " is not yours");
         }
 
+        Player winner = getWinner();
+        if (winner != null) {
+            throw new ChessException("Game is over, winner is " + winner);
+        }
+
+        if (isDraw()) {
+            throw new ChessException("Game is draw");
+        }
+
         if (!target.canMove(this, from, to)) {
             throw new ChessException("Figure at position " + from + " can't move to " + to);
         }
@@ -125,8 +146,8 @@ public class Board {
         // Check if current King is targeted and other Piece wants to move
         // If piece moves to kill the enemy, check if King is still targeted
         King king = getCurrentKing();
-        if (target != king && isCurrentKingTargeted()) {
-            if (isCurrentKingTargetedAfterMove(from, to)) {
+        if (target != king && isKingTargeted(player)) {
+            if (isKingTargetedAfterMove(player, from, to)) {
                 throw new ChessException("King is targeted");
             }
 
@@ -137,12 +158,13 @@ public class Board {
         }
 
         // Check if after the move King is targeted
-        if (isCurrentKingTargetedAfterMove(from, to)) {
+        if (isKingTargetedAfterMove(player, from, to)) {
             throw new ChessException("King will be targeted after the move");
         }
 
+        // TODO: Add check for castling
+
         if (board[to.getX()][to.getY()] != null) {
-            // TODO: Add check for castling
 
             Figure conflictFigure = getFigure(to);
             Player enemyPlayer = player == Player.WHITE ? Player.BLACK : Player.WHITE;
@@ -206,6 +228,22 @@ public class Board {
         return null;
     }
 
+    public Set<FigureMove> getAllPlayerPossibleMoves(Player player) {
+        Set<FigureMove> allPositions = new HashSet<>();
+        for (int i = 0; i < SIZE; i++) {
+            for (int j = 0; j < SIZE; j++) {
+                if (board[i][j] == null || board[i][j].getPlayer() != player)
+                    continue;
+                Figure figure = getFigure(i, j);
+
+                Position position = new Position(i, j);
+
+                allPositions.addAll(figure.possibleMoves(this, position));
+            }
+        }
+        return allPositions;
+    }
+
     public Set<FigureMove> getAllPlayerAttackMoves(Player player) {
         Set<FigureMove> allPositions = new HashSet<>();
         for (int i = 0; i < SIZE; i++) {
@@ -223,8 +261,8 @@ public class Board {
         return allPositions;
     }
 
-    private boolean isCurrentKingTargeted() {
-        King king = getCurrentKing();
+    private boolean isKingTargeted(Player player) {
+        King king = player == Player.WHITE ? whiteKing : blackKing;
         Position kingPosition = getKingPosition(king);
 
         Set<FigureMove> allEnemyMoves = getAllPlayerAttackMoves(player.getEnemy());
@@ -234,7 +272,7 @@ public class Board {
                 .contains(kingPosition);
     }
 
-    private boolean isCurrentKingTargetedAfterMove(Position from, Position to) {
+    private boolean isKingTargetedAfterMove(Player player, Position from, Position to) {
         Figure previousFrom = getFigure(from);
         Figure previousTo = getFigure(to);
 
@@ -243,7 +281,7 @@ public class Board {
             board[to.getX()][to.getY()] = previousFrom;
 
 
-            King king = getCurrentKing();
+            King king = player == Player.WHITE ? whiteKing : blackKing;
             Position kingPosition = getKingPosition(king);
 
             Set<FigureMove> allEnemyMoves = getAllPlayerAttackMoves(player.getEnemy());
@@ -256,6 +294,55 @@ public class Board {
             board[to.getX()][to.getY()] = previousTo;
         }
     }
+
+
+    public boolean isWinner(Player player) {
+        King king = player == Player.WHITE ? blackKing : whiteKing;
+        Position kingPosition = getKingPosition(king);
+
+        if (!isKingTargeted(player.getEnemy())) {
+            return false;
+        }
+
+        Set<FigureMove> allKillerMoves = getAllPlayerAttackMoves(player.getEnemy()).stream()
+                .filter(figureMove -> figureMove.getTo() == kingPosition)
+                .collect(Collectors.toSet());
+
+        Set<Position> allKillerMovePositions = allKillerMoves.stream()
+                .map(FigureMove::getTo)
+                .collect(Collectors.toSet());
+
+        Set<FigureMove> allDefensiveMoves = getAllPlayerAttackMoves(player).stream()
+                .filter(figureMove -> allKillerMovePositions.contains(figureMove.getTo()))
+                .collect(Collectors.toSet());
+
+        if (allDefensiveMoves.isEmpty()) {
+            return true;
+        }
+
+        for (FigureMove defensiveMove : allDefensiveMoves) {
+            if (!isKingTargetedAfterMove(player, defensiveMove.getFrom(), defensiveMove.getTo())) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public Player getWinner() {
+        if (isWinner(Player.WHITE)) {
+            return Player.WHITE;
+        }
+        if (isWinner(Player.BLACK)) {
+            return Player.BLACK;
+        }
+        return null;
+    }
+
+    public boolean isDraw() {
+        return !isKingTargeted(player) && getAllPlayerPossibleMoves(player).isEmpty();
+    }
+
 
     private King getCurrentKing() {
         return player == Player.WHITE ? whiteKing : blackKing;

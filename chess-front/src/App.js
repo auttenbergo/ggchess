@@ -37,7 +37,7 @@ function App() {
         setBoardState(response.data);
       })
       .catch((error) => {
-        console.log("Move error:", error.message);
+        console.log("Move error:", error.response.data.message);
       });
   };
 
@@ -76,7 +76,7 @@ function App() {
         setBoardState(response.data);
       })
       .catch((error) => {
-        console.log("Move error:", error.message);
+        console.log("Move error:", error.response.data.message);
       });
 
     return true;

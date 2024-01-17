@@ -34,7 +34,7 @@ public class ChessService {
         try {
             board.moveFigure(request.from(), request.to(), request.additionalProperties());
         } catch (ChessException e) {
-            log.error("ChessException thrown: {}", e.getMessage());
+            log.error("ChessException thrown", e);
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         }
         return board.getBoard();
