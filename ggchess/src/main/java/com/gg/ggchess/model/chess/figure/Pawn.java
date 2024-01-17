@@ -12,12 +12,10 @@ import java.util.stream.Collectors;
 
 public class Pawn extends Figure {
 
-
     public Pawn(Player player) {
         super(PAWN, player);
     }
 
-    // TODO: En passant
     @Override
     public Set<FigureMove> possibleMoves(Board board, Position from) {
         if (!board.hasFigure(from)) {
@@ -99,6 +97,51 @@ public class Pawn extends Figure {
             }
         }
 
+        if (getPlayer() == Player.WHITE) {
+            if (from.getX() == 3) {
+                // En passant left
+                Position to = new Position(from.getX() - 1, from.getY() - 1);
+                Figure possibleEnemyPawn = board.getFigure(from.getX(), from.getY() - 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.BLACK && board.lastMoveWas(possibleEnemyPawn, new Position(1, from.getY() - 1), new Position(3, from.getY() - 1))) {
+                        positions.add(to);
+                    }
+                }
+
+                // En passant right
+                to = new Position(from.getX() - 1, from.getY() + 1);
+                possibleEnemyPawn = board.getFigure(from.getX(), from.getY() + 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.BLACK && board.lastMoveWas(possibleEnemyPawn, new Position(1, from.getY() + 1), new Position(3, from.getY() + 1))) {
+                        positions.add(to);
+                    }
+                }
+            }
+        }
+
+        if (getPlayer() == Player.BLACK) {
+            if (from.getX() == 4) {
+                // En passant left
+                Position to = new Position(from.getX() + 1, from.getY() - 1);
+                Figure possibleEnemyPawn = board.getFigure(from.getX(), from.getY() - 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.WHITE && board.lastMoveWas(possibleEnemyPawn, new Position(6, from.getY() - 1), new Position(4, from.getY() - 1))) {
+                        positions.add(to);
+                    }
+                }
+
+                // En passant right
+                to = new Position(from.getX() + 1, from.getY() + 1);
+                possibleEnemyPawn = board.getFigure(from.getX(), from.getY() + 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.WHITE && board.lastMoveWas(possibleEnemyPawn, new Position(6, from.getY() + 1), new Position(4, from.getY() + 1))) {
+                        positions.add(to);
+                    }
+                }
+            }
+        }
+
+
         return positions.stream()
                 .map(pos -> new FigureMove(from, pos, this))
                 .collect(Collectors.toSet());
@@ -146,8 +189,54 @@ public class Pawn extends Figure {
                 positions.add(new Position(xx, yy));
             }
         }
+
+        if (getPlayer() == Player.WHITE) {
+            if (from.getX() == 3) {
+                // En passant left
+                Position to = new Position(from.getX() - 1, from.getY() - 1);
+                Figure possibleEnemyPawn = board.getFigure(from.getX(), from.getY() - 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.BLACK && board.lastMoveWas(possibleEnemyPawn, new Position(1, from.getY() - 1), new Position(3, from.getY() - 1))) {
+                        positions.add(to);
+                    }
+                }
+
+                // En passant right
+                to = new Position(from.getX() - 1, from.getY() + 1);
+                possibleEnemyPawn = board.getFigure(from.getX(), from.getY() + 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.BLACK && board.lastMoveWas(possibleEnemyPawn, new Position(1, from.getY() + 1), new Position(3, from.getY() + 1))) {
+                        positions.add(to);
+                    }
+                }
+            }
+        }
+
+        if (getPlayer() == Player.BLACK) {
+            if (from.getX() == 4) {
+                // En passant left
+                Position to = new Position(from.getX() + 1, from.getY() - 1);
+                Figure possibleEnemyPawn = board.getFigure(from.getX(), from.getY() - 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.WHITE && board.lastMoveWas(possibleEnemyPawn, new Position(6, from.getY() - 1), new Position(4, from.getY() - 1))) {
+                        positions.add(to);
+                    }
+                }
+
+                // En passant right
+                to = new Position(from.getX() + 1, from.getY() + 1);
+                possibleEnemyPawn = board.getFigure(from.getX(), from.getY() + 1);
+                if (possibleEnemyPawn instanceof Pawn) {
+                    if (possibleEnemyPawn.getPlayer() == Player.WHITE && board.lastMoveWas(possibleEnemyPawn, new Position(6, from.getY() + 1), new Position(4, from.getY() + 1))) {
+                        positions.add(to);
+                    }
+                }
+            }
+        }
+
         return positions.stream()
                 .map(pos -> new FigureMove(from, pos, this))
                 .collect(Collectors.toSet());
     }
+
 }

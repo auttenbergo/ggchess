@@ -10,23 +10,34 @@ import com.gg.ggchess.model.chess.figure.Pawn;
 import com.gg.ggchess.model.chess.figure.Queen;
 import com.gg.ggchess.model.chess.figure.Rook;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Board {
+
+    private List<FigureMove> history;
     public static final int SIZE = 8;
     private Figure[][] board;
     private Player player;
     private King whiteKing;
     private King blackKing;
 
+    public Board() {
+        board = new Figure[SIZE][SIZE];
+        history = new ArrayList<>();
+    }
+
     public void initializeCustom(Map<String, String> boardMap) throws ChessException {
         if (!boardMap.containsValue("wK") || !boardMap.containsValue("bK"))
             throw new ChessException("Board must contain white and black king");
+
+        history = new ArrayList<>();
 
         board = new Figure[SIZE][SIZE];
         for (Map.Entry<String, String> entry : boardMap.entrySet()) {
@@ -56,6 +67,7 @@ public class Board {
 
     public Map<String, String> initialize() {
         board = new Figure[SIZE][SIZE];
+        history = new ArrayList<>();
         initializeBlacks();
         initializeWhites();
         player = Player.WHITE;
@@ -93,10 +105,6 @@ public class Board {
         board[7][5] = new Bishop(Player.WHITE);
         board[7][6] = new Knight(Player.WHITE);
         board[7][7] = new Rook(Player.WHITE);
-    }
-
-    public Board() {
-        board = new Figure[SIZE][SIZE];
     }
 
     public boolean hasFigure(Position position) {
@@ -154,6 +162,7 @@ public class Board {
             board[to.getX()][to.getY()] = target;
             board[from.getX()][from.getY()] = null;
             player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+            history.add(new FigureMove(from, to, target));
             return;
         }
 
@@ -172,6 +181,7 @@ public class Board {
                 board[to.getX()][to.getY()] = target;
                 board[from.getX()][from.getY()] = null;
                 player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+                history.add(new FigureMove(from, to, target));
                 return;
             }
         }
@@ -190,12 +200,91 @@ public class Board {
             board[to.getX()][to.getY()] = promotedFigure;
             board[from.getX()][from.getY()] = null;
             player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+            history.add(new FigureMove(from, to, target));
             return;
+        }
+
+        if (target instanceof Pawn) {
+            if (player == Player.WHITE) {
+                if (from.getX() == 3) {
+                    // En passant left
+                    if (to.getY() == from.getY() - 1 && from.getY() >= 1) {
+                        if (board[from.getX()][from.getY() - 1] instanceof Pawn) {
+                            Pawn enemyPawn = (Pawn) board[from.getX()][from.getY() - 1];
+                            if (enemyPawn.getPlayer() == Player.BLACK && lastMoveWas(enemyPawn, new Position(1, from.getY() - 1), new Position(3, from.getY() - 1))) {
+                                board[from.getX()][from.getY() - 1] = null;
+                                board[to.getX()][to.getY()] = target;
+                                board[from.getX()][from.getY()] = null;
+                                player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+                                history.add(new FigureMove(from, to, target));
+                                return;
+                            }
+                        }
+                    }
+                    // En passant right
+                    if (to.getY() == from.getY() + 1 && from.getY() < SIZE - 1) {
+                        if (board[from.getX()][from.getY() + 1] instanceof Pawn) {
+                            Pawn enemyPawn = (Pawn) board[from.getX()][from.getY() + 1];
+                            if (enemyPawn.getPlayer() == Player.BLACK && lastMoveWas(enemyPawn, new Position(1, from.getY() + 1), new Position(3, from.getY() + 1))) {
+                                board[from.getX()][from.getY() + 1] = null;
+                                board[to.getX()][to.getY()] = target;
+                                board[from.getX()][from.getY()] = null;
+                                player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+                                history.add(new FigureMove(from, to, target));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (player == Player.BLACK) {
+                if (from.getX() == 4) {
+                    // En passant left
+                    if (to.getY() == from.getY() - 1 && from.getY() >= 1) {
+                        if (board[from.getX()][from.getY() - 1] instanceof Pawn) {
+                            Pawn enemyPawn = (Pawn) board[from.getX()][from.getY() - 1];
+                            if (enemyPawn.getPlayer() == Player.WHITE && lastMoveWas(enemyPawn, new Position(6, from.getY() - 1), new Position(4, from.getY() - 1))) {
+                                board[from.getX()][from.getY() - 1] = null;
+                                board[to.getX()][to.getY()] = target;
+                                board[from.getX()][from.getY()] = null;
+                                player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+                                history.add(new FigureMove(from, to, target));
+                                return;
+                            }
+                        }
+                    }
+                    // En passant right
+                    if (to.getY() == from.getY() + 1 && from.getY() < SIZE - 1) {
+                        if (board[from.getX()][from.getY() + 1] instanceof Pawn) {
+                            Pawn enemyPawn = (Pawn) board[from.getX()][from.getY() + 1];
+                            if (enemyPawn.getPlayer() == Player.WHITE && lastMoveWas(enemyPawn, new Position(6, from.getY() + 1), new Position(4, from.getY() + 1))) {
+                                board[from.getX()][from.getY() + 1] = null;
+                                board[to.getX()][to.getY()] = target;
+                                board[from.getX()][from.getY()] = null;
+                                player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+                                history.add(new FigureMove(from, to, target));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         board[to.getX()][to.getY()] = target;
         board[from.getX()][from.getY()] = null;
         player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+        history.add(new FigureMove(from, to, target));
+    }
+
+    public boolean lastMoveWas(Figure figure, Position from, Position to) {
+        if (history.isEmpty())
+            return false;
+        FigureMove figureMove = history.get(history.size() - 1);
+        return figureMove.getFrom().equals(from)
+                && figureMove.getTo().equals(to) &&
+                figureMove.getFigure().equals(figure);
     }
 
     public boolean canPromote(String from, String to, Map<String, String> stringStringMap) {
