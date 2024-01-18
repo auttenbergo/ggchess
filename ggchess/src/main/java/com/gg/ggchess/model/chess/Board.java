@@ -171,8 +171,6 @@ public class Board {
             throw new ChessException("King will be targeted after the move");
         }
 
-        // TODO: Add check for castling
-
         if (board[to.getX()][to.getY()] != null) {
 
             Figure conflictFigure = getFigure(to);
@@ -272,10 +270,59 @@ public class Board {
             }
         }
 
+        if (target instanceof King) {
+            if (player == Player.WHITE) {
+                if (from.getX() == SIZE - 1 && from.getY() == 4) {
+                    if (to.getX() == SIZE - 1 && to.getY() == 1) {
+                        board[from.getX()][from.getY()] = null;
+                        board[to.getX()][to.getY()] = target;
+                        board[SIZE - 1][2] = board[SIZE - 1][0];
+                        board[SIZE - 1][0] = null;
+                        player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
+                        history.add(new FigureMove(from, to, target));
+                        return;
+                    } else if (to.getX() == SIZE - 1 && to.getY() == SIZE - 2) {
+                        board[from.getX()][from.getY()] = null;
+                        board[to.getX()][to.getY()] = target;
+                        board[SIZE - 1][5] = board[SIZE - 1][7];
+                        board[SIZE - 1][7] = null;
+                        player = Player.BLACK;
+                        history.add(new FigureMove(from, to, target));
+                        return;
+                    }
+                }
+            }
+            if(player == Player.BLACK){
+                if (from.getX() == 0 && from.getY() == 4) {
+                    if (to.getX() == 0 && to.getY() == 1) {
+                        board[from.getX()][from.getY()] = null;
+                        board[to.getX()][to.getY()] = target;
+                        board[0][2] = board[0][0];
+                        board[0][0] = null;
+                        player = Player.WHITE;
+                        history.add(new FigureMove(from, to, target));
+                        return;
+                    } else if (to.getX() == 0 && to.getY() == SIZE - 2) {
+                        board[from.getX()][from.getY()] = null;
+                        board[to.getX()][to.getY()] = target;
+                        board[0][5] = board[0][7];
+                        board[0][7] = null;
+                        player = Player.WHITE;
+                        history.add(new FigureMove(from, to, target));
+                        return;
+                    }
+                }
+            }
+        }
+
         board[to.getX()][to.getY()] = target;
         board[from.getX()][from.getY()] = null;
         player = (player == Player.WHITE) ? Player.BLACK : Player.WHITE;
         history.add(new FigureMove(from, to, target));
+    }
+
+    public boolean figureHasMoved(Figure figure) {
+        return history.stream().anyMatch(figureMove -> figureMove.getFigure() == figure);
     }
 
     public boolean lastMoveWas(Figure figure, Position from, Position to) {
@@ -393,15 +440,21 @@ public class Board {
             return false;
         }
 
-        Set<FigureMove> allKillerMoves = getAllPlayerAttackMoves(player.getEnemy()).stream()
-                .filter(figureMove -> figureMove.getTo() == kingPosition)
+        Set<FigureMove> kingPossibleMoves = king.possibleMoves(this, kingPosition);
+
+        if (!kingPossibleMoves.isEmpty()) {
+            return false;
+        }
+
+        Set<FigureMove> allKillerMoves = getAllPlayerAttackMoves(player).stream()
+                .filter(figureMove -> figureMove.getTo().equals(kingPosition))
                 .collect(Collectors.toSet());
 
         Set<Position> allKillerMovePositions = allKillerMoves.stream()
-                .map(FigureMove::getTo)
+                .map(FigureMove::getFrom)
                 .collect(Collectors.toSet());
 
-        Set<FigureMove> allDefensiveMoves = getAllPlayerAttackMoves(player).stream()
+        Set<FigureMove> allDefensiveMoves = getAllPlayerAttackMoves(player.getEnemy()).stream()
                 .filter(figureMove -> allKillerMovePositions.contains(figureMove.getTo()))
                 .collect(Collectors.toSet());
 

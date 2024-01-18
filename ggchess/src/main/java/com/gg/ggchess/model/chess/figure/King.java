@@ -15,7 +15,6 @@ public class King extends Figure {
         super(KING, player);
     }
 
-    // TODO: Add castling
     @Override
     public Set<FigureMove> possibleMoves(Board board, Position from) {
         if (!board.hasFigure(from)) {
@@ -56,6 +55,107 @@ public class King extends Figure {
             }
         }
 
+        if (!board.figureHasMoved(this)) {
+            if (getPlayer() == Player.WHITE) {
+                // Check that lower left corner is rook and it has not moved
+                if (board.hasFigure(Board.SIZE - 1, 0) && board.getFigure(Board.SIZE - 1, 0) instanceof Rook rook) {
+                    if (!board.figureHasMoved(rook)) {
+
+                        boolean canRookMove = true;
+
+                        for (int i = 1; i < from.getY(); i++) {
+                            if (board.hasFigure(Board.SIZE - 1, i)) {
+                                canRookMove = false;
+                                break;
+                            }
+                            Position position = new Position(Board.SIZE - 1, i);
+                            if (allEnemyMoves.contains(position)) {
+                                canRookMove = false;
+                                break;
+                            }
+                        }
+
+                        if (canRookMove) {
+                            positions.add(new Position(from.getX(), 1));
+                        }
+                    }
+                }
+                // Check that lower right corner is rook and it has not moved
+                if (board.hasFigure(Board.SIZE - 1, Board.SIZE - 1) && board.getFigure(Board.SIZE - 1, Board.SIZE - 1) instanceof Rook rook) {
+                    if (!board.figureHasMoved(rook)) {
+
+                        boolean canRookMove = true;
+
+                        for (int i = from.getY() + 1; i < Board.SIZE - 2; i++) {
+                            if (board.hasFigure(Board.SIZE - 1, i)) {
+                                canRookMove = false;
+                                break;
+                            }
+                            Position position = new Position(Board.SIZE - 1, i);
+                            if (allEnemyMoves.contains(position)) {
+                                canRookMove = false;
+                                break;
+                            }
+                        }
+
+                        if (canRookMove) {
+                            positions.add(new Position(from.getX(), 6));
+                        }
+                    }
+                }
+            }
+
+            if (getPlayer() == Player.BLACK) {
+                // Check that upper left corner is rook and it has not moved
+                if (board.hasFigure(0, 0) && board.getFigure(0, 0) instanceof Rook rook) {
+                    if (!board.figureHasMoved(rook)) {
+
+                        boolean canRookMove = true;
+
+                        for (int i = 1; i < from.getY(); i++) {
+                            if (board.hasFigure(0, i)) {
+                                canRookMove = false;
+                                break;
+                            }
+                            Position position = new Position(0, i);
+                            if (allEnemyMoves.contains(position)) {
+                                canRookMove = false;
+                                break;
+                            }
+                        }
+
+                        if (canRookMove) {
+                            positions.add(new Position(from.getX(), 1));
+                        }
+                    }
+                }
+                // Check that upper right corner is rook and it has not moved
+                if (board.hasFigure(0, Board.SIZE - 1) && board.getFigure(0, Board.SIZE - 1) instanceof Rook rook) {
+                    if (!board.figureHasMoved(rook)) {
+
+                        boolean canRookMove = true;
+
+                        for (int i = from.getY() + 1; i < Board.SIZE - 2; i++) {
+                            if (board.hasFigure(0, i)) {
+                                canRookMove = false;
+                                break;
+                            }
+                            Position position = new Position(0, i);
+                            if (allEnemyMoves.contains(position)) {
+                                canRookMove = false;
+                                break;
+                            }
+                        }
+
+                        if (canRookMove) {
+                            positions.add(new Position(from.getX(), 6));
+                        }
+                    }
+                }
+            }
+
+
+        }
         return positions.stream()
                 .map(pos -> new FigureMove(from, pos, this))
                 .collect(Collectors.toSet());
