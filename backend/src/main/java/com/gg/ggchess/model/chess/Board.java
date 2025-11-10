@@ -292,7 +292,7 @@ public class Board {
                     }
                 }
             }
-            if(player == Player.BLACK){
+            if (player == Player.BLACK) {
                 if (from.getX() == 0 && from.getY() == 4) {
                     if (to.getX() == 0 && to.getY() == 1) {
                         board[from.getX()][from.getY()] = null;

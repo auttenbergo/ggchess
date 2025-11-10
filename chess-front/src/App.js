@@ -10,7 +10,7 @@ function App() {
 
   useState(() => {
     axios
-      .post("http://localhost:8180/chess/initialize")
+      .post("http://localhost:8080/chess/initialize")
       .then((response) => {
         setBoardState(response.data);
       })
@@ -25,7 +25,7 @@ function App() {
     const newPiece = promotedPiece[1];
 
     axios
-      .post("http://localhost:8180/chess/move", {
+      .post("http://localhost:8080/chess/move", {
         from: lastClickedPieceData.sourceSquare,
         to: lastClickedPieceData.targetSquare,
         additionalProperties: {
@@ -67,7 +67,7 @@ function App() {
     console.log("onPieceDrop:", sourceSquare, targetSquare, piece[1], player);
 
     axios
-      .post("http://localhost:8180/chess/move", {
+      .post("http://localhost:8080/chess/move", {
         from: sourceSquare,
         to: targetSquare,
       })
